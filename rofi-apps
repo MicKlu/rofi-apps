@@ -65,6 +65,9 @@ def main():
 
 				entriesSorted.append(entry)
 
+				# Edit entry following user defined rules
+				entry.setCustoms(config)
+
 			except TypeError as e:
 				# Normally not a desktop entry, but print error anyway
 				print(f"[@] TypeError while processing {entryPath}. Probably not a desktop entry.", file=sys.stderr)
@@ -102,6 +105,9 @@ class Config:
 	def __init__(self, path):
 		"""
 		Open config file and extract blacklist and pinned rules
+
+		Attributes:
+			path - path to config file
 		"""
 
 		with open(path, "r") as f:
@@ -134,7 +140,7 @@ class Entry():
 		isBlacklisted(config) - Check if desktop entry is blacklisted
 		isPinned(config) - Check if desktop entry is pinned
 		matchRule(rule) - Check if rule matches the desktop entry
-		setCustoms(entry) - Set custom properties for the desktop entry
+		setCustoms() - Set custom properties for the desktop entry
 		getNoDisplay() - Returns NoDisplay value
 		getName() - Returns Name or Custom name (if set)
 		getCommandLine() - Returns Exec value
@@ -144,6 +150,13 @@ class Entry():
 	"""
 
 	def __init__(self, path):
+		"""
+		Open desktop entry file and read its properties to Gio.DesktopAppInfo object
+
+		Attributes:
+			path - path to desktop entry file
+		"""
+
 		self.entry = Gio.DesktopAppInfo.new_from_filename(path)
 		self.customName = None
 
@@ -183,6 +196,20 @@ class Entry():
 			i += 1
 		return -1;
 
+	def setCustoms(self, config):
+		"""
+		Set custom properties for the desktop entry
+
+		Parameters:
+			config - Config object containing list of custom rules
+		"""
+
+		for rule in config.getCustoms():
+			if self.matchRule(rule):
+				if "newName" in rule:
+					self.customName = rule["newName"]
+				break
+
 	def matchRule(self, rule):
 		"""
 		Check if rule matches the desktop entry
@@ -211,7 +238,7 @@ class Entry():
 	def getName(self):
 		"""Returns Name or Custom name (if set)"""
 		if self.customName:
-			return customName
+			return self.customName
 		else:
 			return self.entry.get_name()
 

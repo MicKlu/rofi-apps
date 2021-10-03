@@ -1,22 +1,27 @@
 {
 	// Blacklist
 	"blacklist":[
-		// { "name":"Hardware Locality lstopo" },
-		// { "name":"O środowisku Xfce" },
-		// { "name":"compton" },
-		// { "name":"picom" },
-		// { "name":"Preferowane programy" },
-		// { "name":"Domyślne programy" },
-		// { "name":"Avahi" },
-		// { "name":"Qt.*?[Uu]tility" },
-		// { "name":"urxvt \\(.*?\\)" },
-		// { "name":"Ustawienia pulpitu" },
-		// { "name":"Vim" },
-		// { "name":"Wsadowe zmienianie nazw" },
-		// { "name":"Ustawienia menedżera plików" },
-		// { "name":"Ustawienia sesji" },
-		// { "name":"conky" },
-		// { "name":"Zaawansowana konfiguracja sieci" }
+		{ "name":"Hardware Locality lstopo" },
+		{ "name":"O środowisku Xfce" },
+		{ "name":"compton" },
+		{ "name":"picom" },
+		{ "name":"Preferowane programy" },
+		{ "name":"Domyślne programy" },
+		{ "name":"Avahi" },
+		{ "name":"Qt.*?[Uu]tility" },
+		{ "name":"urxvt \\(.*?\\)" },
+		{ "name":"Ustawienia pulpitu" },
+		{ "name":"Vim" },
+		{ "name":"Wsadowe zmienianie nazw" },
+		{ "name":"Ustawienia menedżera plików" },
+		{ "name":"Ustawienia sesji" },
+		{ "name":"conky" },
+		{ "name":"Zaawansowana konfiguracja sieci" },
+		{ "name":"^Adobe [^P]*.?$" },
+		{ "name":"Microsoft Office" },
+		{ "name":"Cert[iy]fi[ck]ate?.*?VBA" },
+		{ "name":"Microsoft Clip" },
+		{ "name":"Microsoft InfoPath" }
 	],
 
 	// Pinned
@@ -29,6 +34,9 @@
 
 	// Customs
 	"customs":[
-		{ "name":"XnView", "newName":"XnView" }
+		{ "name":"XnView", "newName":"XnView" },
+		{ "name":"VLC media player", "newName":"VLC" },
+		{ "name":"Thunar", "newName":"Thunar" },
+		{ "name":"Przeglądarka dokumentów", "newName":"Evince" }
 	]
 }
