@@ -53,8 +53,15 @@ def main():
 					continue
 
 				# Ignore duplicated entries
-				if entry.getFilename() in [e.getFilename() for e in entriesPinned + entriesSorted]:
+				if entry.getFilename() in [e.getFilename() for e in entriesPinned + entriesSorted if e]:
 					continue
+
+				# Sort pinned entries
+				entryIndex = entry.indexOfPinned(config)
+				if entryIndex != -1:
+					if len(entriesPinned) <= entryIndex:
+						entriesPinned += [None] * (entryIndex - len(entriesPinned) + 1)
+					entriesPinned[entryIndex] = entry
 
 				entriesSorted.append(entry)
 

@@ -21,9 +21,10 @@
 
 	// Pinned
 	"pinned":[
-		{ "Name":"Chromium" },
-		{ "Name":"Thunar" },
-		{ "Name":"Sublime" }
+		{ "name":"Chromium" },
+		{ "name":"Thunar" },
+		{ "name":"PCManFM" },
+		{ "name":"Sublime" }
 	],
 
 	// Customs
