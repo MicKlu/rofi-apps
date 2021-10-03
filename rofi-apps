@@ -71,8 +71,8 @@ def main():
 					if len(entriesPinned) <= entryIndex:
 						entriesPinned += [None] * (entryIndex - len(entriesPinned) + 1)
 					entriesPinned[entryIndex] = entry
-
-				entriesSorted.append(entry)
+				else:
+					entriesSorted.append(entry)
 
 				# Edit entry following user defined rules
 				entry.setCustoms(config)
