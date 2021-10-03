@@ -3,8 +3,10 @@
 from gi.repository import Gio
 import json
 import locale
+import os
 from pathlib import Path
 import re
+import subprocess
 import sys
 
 CONFIG_PATHS = {
@@ -20,7 +22,14 @@ ENTRIES_PATHS = [
 ]
 
 def main():
-	
+	# Get rofi state
+	ROFI_RETV = os.getenv("ROFI_RETV", 0)
+
+	if ROFI_RETV == '1':
+		entry = Entry(os.getenv("ROFI_INFO", ""))
+		entry.launch()
+		return
+
 	if CONFIG_PATHS["user"].exists():
 		config = Config(CONFIG_PATHS["user"])
 	elif CONFIG_PATHS["global"].exists():
@@ -84,7 +93,7 @@ def main():
 	for entry in entries:
 		if entry:
 			# print(f"{entry.getName()}\0icon\x1f{item['icon']}\x1finfo\x1f{item['executable']}")
-			print(f"{entry.getName()}\0icon\x1f{entry.getIcon()}\x1finfo\x1f{entry.getPath()}")
+			print(f"{entry.getName()}\0icon\x1f{entry.getIcon()}\x1finfo\x1f{str(entry.getPath())}")
 
 
 class Config:
@@ -141,12 +150,14 @@ class Entry():
 		isPinned(config) - Check if desktop entry is pinned
 		matchRule(rule) - Check if rule matches the desktop entry
 		setCustoms() - Set custom properties for the desktop entry
+		launch() - Starts entry's application
 		getNoDisplay() - Returns NoDisplay value
 		getName() - Returns Name or Custom name (if set)
 		getCommandLine() - Returns Exec value
 		getPath() - Returns path to desktop entry file
 		getFilename() - Returns name of desktop entry file
 		getIcon() - Returns string representation of entry's icon
+		getEntryId() - Returns absolute desktop entry id
 	"""
 
 	def __init__(self, path):
@@ -210,6 +221,13 @@ class Entry():
 					self.customName = rule["newName"]
 				break
 
+	def launch(self):
+		"""Starts entry's application"""
+		print(f"[?] Launching {self.getName()} ({self.entry.get_name()})", file=sys.stderr)
+		print(f"[?] Desktop entry id: {self.getEntryId()}", file=sys.stderr)
+		print(f"[?] Desktop entry path: {str(self.getPath())}", file=sys.stderr)
+		subprocess.Popen(['gtk-launch', self.getEntryId()], close_fds=True, start_new_session=True, stdout=subprocess.DEVNULL)
+
 	def matchRule(self, rule):
 		"""
 		Check if rule matches the desktop entry
@@ -248,11 +266,11 @@ class Entry():
 
 	def getFilename(self):
 		"""Returns name of desktop entry file"""
-		return Path(self.getPath()).name
+		return self.getPath().name
 
 	def getPath(self):
 		"""Returns path to desktop entry file"""
-		return self.entry.get_filename()
+		return Path(self.entry.get_filename())
 
 	def getIcon(self):
 		"""Returns string representation of entry's icon"""
@@ -269,6 +287,16 @@ class Entry():
 			print(f"[!] AttributeError while reading icon file of {self.getFilename()}.", file=sys.stderr)
 			print(f"[!] {e}.", file=sys.stderr)
 			return None
+
+	def getEntryId(self):
+		"""Returns absolute desktop entry id"""
+		path = self.getPath()
+		for entriesPaths in ENTRIES_PATHS:
+			if not path.is_relative_to(entriesPaths):
+				continue
+			relativePath = path.relative_to(entriesPaths)
+			return str(relativePath.parent / relativePath.stem).replace("/", "-")
+		return str(path.stem).replace("/", "-")
 
 
 if __name__ == "__main__":
