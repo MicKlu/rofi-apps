@@ -24,8 +24,9 @@ ENTRIES_PATHS = [
 def main():
 	# Get rofi state
 	ROFI_RETV = os.getenv("ROFI_RETV", 0)
-
+	
 	if ROFI_RETV == '1':
+		os.environ["ROFI_RETV"] = "0"
 		entry = Entry(os.getenv("ROFI_INFO", ""))
 		entry.launch()
 		return
