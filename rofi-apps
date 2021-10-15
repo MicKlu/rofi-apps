@@ -21,6 +21,8 @@ ENTRIES_PATHS = [
 	Path("/usr/share/applications")
 ]
 
+CACHE_PATH = Path.home() / ".cache/rofi-apps"
+
 def main():
 	# Get rofi state
 	ROFI_RETV = os.getenv("ROFI_RETV", 0)
@@ -30,7 +32,13 @@ def main():
 		entry = Entry(os.getenv("ROFI_INFO", ""))
 		entry.launch()
 		return
+	else:
+		showList()
 
+def showList():
+	"""Shows applications list"""
+
+	# Read config
 	if CONFIG_PATHS["user"].exists():
 		config = Config(CONFIG_PATHS["user"])
 	elif CONFIG_PATHS["global"].exists():
@@ -41,12 +49,24 @@ def main():
 		print(f"[!] Config not found.", file=sys.stderr)
 		sys.exit(1)
 
+	# Read from cache
+	if isListCached(config):
+		print(f"[?] Reading from cache", file=sys.stderr)
+		with open(CACHE_PATH / "applist", "r") as cache:
+			print(cache.read())
+		return
+	print(f"[?] Generating new list", file=sys.stderr)
+
 	# Lists for storing entries
 	entriesPinned = []
 	entriesSorted = []
 
+	entriesLength = 0
+
 	for entriesPaths in ENTRIES_PATHS:
-		for entryPath in entriesPaths.rglob("*"):
+		for entryPath in entriesPaths.rglob("*.desktop"):
+			entriesLength += 1
+
 			# Skip directories
 			if entryPath.is_dir():
 				continue
@@ -90,23 +110,72 @@ def main():
 	# Concatenate lists
 	entries = entriesPinned + entriesSorted
 
-	# Display final entries
-	for entry in entries:
-		if entry:
-			# print(f"{entry.getName()}\0icon\x1f{item['icon']}\x1finfo\x1f{item['executable']}")
-			print(f"{entry.getName()}\0icon\x1f{entry.getIcon()}\x1finfo\x1f{str(entry.getPath())}")
+	# Open cache file
+	if not CACHE_PATH.exists():
+		CACHE_PATH.mkdir(parents=True)
 
+	with open(CACHE_PATH / "applist", "w") as cache:
+		# Display final entries
+		for entry in entries:
+			if entry:
+				entryString = f"{entry.getName()}\0icon\x1f{entry.getIcon()}\x1finfo\x1f{str(entry.getPath())}"
+				print(entryString)
+				cache.write(entryString + "\n")
+
+	with open(CACHE_PATH / "cachedb", "w") as cache:
+		# Update config mtime
+		cache.write(f"{config.getPath().stat().st_mtime}\n")
+
+		# Update desktop entries length
+		cache.write(f"{entriesLength}\n")
+
+
+def isListCached(config):
+	"""
+	Checks if applications list is cached and if it needs update
+
+	Parameters:
+		config - Config object
+
+	Returns:
+		result - True if list cache is up to date, False otherwise
+	"""
+
+	# No file - no cache
+	if not (CACHE_PATH / "applist").exists():
+		print(f"[?] No cache file", file=sys.stderr)
+		return False
+
+	with open(CACHE_PATH / "cachedb", "r") as cache:
+
+		# Check if config changed
+		configMtime = cache.readline()
+		if config.getPath().stat().st_mtime != float(configMtime):
+			print(f"[?] Config file changed", file=sys.stderr)
+			return False
+
+		# Check if desktop entries length changed
+		entriesLength = int(cache.readline())
+		for entriesPaths in ENTRIES_PATHS:
+			entriesLength -= len([i for i in entriesPaths.rglob("*.desktop")])
+		if entriesLength != 0:
+			print(f"[?] Desktop entries length changed", file=sys.stderr)
+			return False
+
+	return True
 
 class Config:
 	"""
 	Reads config file and does matching for custom entries
 
 	Attributes:
+		path - path to config file
 		blacklist - list of blacklist rules
 		pinned - list of pinned rules
 		rename - list of custom name rules
 
 	Methods:
+		getPath() - Returns path to config
 		getBlacklist() - Returns list of blacklisted entries rules
 		getPinned() - Returns list of pinned entries rules
 		getCustoms() - Returns list of custom entries rules and values
@@ -116,7 +185,7 @@ class Config:
 		"""
 		Open config file and extract blacklist and pinned rules
 
-		Attributes:
+		Parameters:
 			path - path to config file
 		"""
 
@@ -124,17 +193,25 @@ class Config:
 			configJson = f.read()
 			configJson = re.sub("//.*?$", "", configJson, flags=re.M)
 			config = json.loads(configJson)
+			self.path = path
 			self.blacklist = config["blacklist"]
 			self.pinned = config["pinned"]
 			self.customs = config["customs"]
 
+	def getPath(self):
+		"""Returns path to config"""
+		return self.path
+
 	def getBlacklist(self):
+		"""Returns list of blacklisted entries rules"""
 		return self.blacklist
 
 	def getPinned(self):
+		"""Returns list of pinned entries rules"""
 		return self.pinned
 
 	def getCustoms(self):
+		"""Returns list of custom entries rules and values"""
 		return self.customs
 
 class Entry():
@@ -165,7 +242,7 @@ class Entry():
 		"""
 		Open desktop entry file and read its properties to Gio.DesktopAppInfo object
 
-		Attributes:
+		Parameters:
 			path - path to desktop entry file
 		"""
 
